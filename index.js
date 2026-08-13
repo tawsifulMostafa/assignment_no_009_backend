@@ -1,8 +1,12 @@
 const express = require('express');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const app = express();
-const dotenv = require("dotenv").config()
+require("dotenv").config()
+const cors = require("cors")
 const port = process.env.PORT_URI;
+
+app.use(cors())
+app.use(express())
 
 const client =new MongoClient(process.env.MONGODB_URI)
 
@@ -26,7 +30,11 @@ async function connectToMongoDB() {
         const rooms = await RoomsCollection.find().toArray()
         res.json(rooms)
     })
-
+     app.get('/rooms/:id' , async(req , res) => {
+            const {id} = await req.params
+            const result = await RoomsCollection.findOne({_id: new ObjectId(id)})
+            res.json(result)
+     })
     
     
     return client;
