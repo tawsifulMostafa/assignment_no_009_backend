@@ -12,7 +12,20 @@ async function connectToMongoDB() {
     await client.connect();
     
     const db = client.db("studyNook")
-    const StudyNookCollection = db.collection("StudyNookCollections")         
+    const StudyNookCollection = db.collection("added-Rooms")
+    const RoomsCollection =  db.collection("rooms")        
+
+    app.post("/add-rooms" , async(req , res) =>{
+      const rooms =await req.body
+      const results = await StudyNookCollection.insertOne(rooms)
+    
+    res.json(results)
+    })
+
+    app.get("/rooms" , async(req , res) =>{
+        const rooms = await RoomsCollection.find().toArray()
+        res.json(rooms)
+    })
 
     
     
