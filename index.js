@@ -10,7 +10,6 @@ app.use(cors());
 app.use(express.json());
 
 const client = new MongoClient(process.env.MONGODB_URI);
-
 async function connectToMongoDB() {
   try {
     await client.connect();
@@ -50,6 +49,7 @@ async function connectToMongoDB() {
             endTime
         } = bookingData;
 
+         
         const existingBooking = await bookingCollection.findOne({
             roomId: roomId,
             bookingDate: bookingDate,
@@ -80,7 +80,13 @@ async function connectToMongoDB() {
         });
     }
 });
-
+  app.patch("/rooms/:id" , async(req , res) => {
+    const newRoomData =   req.body
+    const {id} =  req.params
+    const result = await RoomsCollection.updateOne({_id: new ObjectId(id)} , {$set: newRoomData})
+    res.json(result)
+  })
+  
   } catch (err) {
     console.error("MongoDB Connection Error:", err);
   }
