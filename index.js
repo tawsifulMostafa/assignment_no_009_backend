@@ -24,6 +24,16 @@ async function connectToMongoDB() {
       const result = await RoomsCollection.insertOne(addedRooms)
       res.json(result)
 
+      if(result.acknowledged === true){
+        {
+        res.status(201).json({
+            success: true,
+            message: "Room added successfully",
+            insertedId: result.insertedId,
+        });
+    }
+      }
+
     })
 
     app.get("/rooms", async (req, res) => {
@@ -42,8 +52,11 @@ async function connectToMongoDB() {
       const result = await bookingCollection.find({ userId: userId }).toArray()
       res.json(result)
     })
-
-
+    app.get("/rooms/user/:userId" , async(req , res )=> {
+      const {userId} = req.params
+      const result = await RoomsCollection.find({userId : userId}).toArray()
+      res.json(result)
+    })
     app.post("/bookings", async (req, res) => {
       try {
         const bookingData = req.body;
