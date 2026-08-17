@@ -93,6 +93,16 @@ async function connectToMongoDB() {
       const result = await RoomsCollection.updateOne({ _id: new ObjectId(id) }, { $set: newRoomData })
       res.json(result)
     })
+    app.patch("/bookings/:bookingId", async (req, res) => {
+      const { bookingId } = req.params;
+
+      const result = await bookingCollection.updateOne(
+        { _id: new ObjectId(bookingId) },
+        { $set: { status: "cancelled" } }
+      );
+
+      res.send(result);
+    });
 
 
 
