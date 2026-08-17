@@ -24,14 +24,14 @@ async function connectToMongoDB() {
       const result = await RoomsCollection.insertOne(addedRooms)
       res.json(result)
 
-      if(result.acknowledged === true){
+      if (result.acknowledged === true) {
         {
-        res.status(201).json({
+          res.status(201).json({
             success: true,
             message: "Room added successfully",
             insertedId: result.insertedId,
-        });
-    }
+          });
+        }
       }
 
     })
@@ -44,6 +44,13 @@ async function connectToMongoDB() {
     app.get("/rooms/:id", async (req, res) => {
       const { id } = req.params;
       const result = await RoomsCollection.findOne({ _id: new ObjectId(id) });
+
+      if (!result) {
+        return res.status(404).json({
+          message: "room not found" 
+        })
+
+      }
       res.json(result);
     });
 
@@ -52,9 +59,9 @@ async function connectToMongoDB() {
       const result = await bookingCollection.find({ userId: userId }).toArray()
       res.json(result)
     })
-    app.get("/rooms/user/:userId" , async(req , res )=> {
-      const {userId} = req.params
-      const result = await RoomsCollection.find({userId : userId}).toArray()
+    app.get("/rooms/user/:userId", async (req, res) => {
+      const { userId } = req.params
+      const result = await RoomsCollection.find({ userId: userId }).toArray()
       res.json(result)
     })
     app.post("/bookings", async (req, res) => {
@@ -105,6 +112,9 @@ async function connectToMongoDB() {
       const { id } = req.params
       const result = await RoomsCollection.updateOne({ _id: new ObjectId(id) }, { $set: newRoomData })
       res.json(result)
+      if (res.acknowledged === true) {
+        message: "Room edited successfully"
+      }
     })
     app.patch("/bookings/:bookingId", async (req, res) => {
       const { bookingId } = req.params;
@@ -116,6 +126,23 @@ async function connectToMongoDB() {
 
       res.send(result);
     });
+
+    app.delete("/rooms/:id", async (req, res) => {
+      const { id } = req.params
+      const result = await RoomsCollection.deleteOne({ _id: new ObjectId(id) })
+      res.json(result)
+      if (result.acknowledged === true) {
+        {
+          res.status(201).json({
+            success: true,
+            message: "Room deleted successfully",
+            insertedId: result.insertedId,
+          });
+        }
+      }
+
+
+    })
 
 
 
