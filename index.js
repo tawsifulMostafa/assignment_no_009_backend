@@ -40,6 +40,11 @@ async function connectToMongoDB() {
       const rooms = await RoomsCollection.find().toArray();
       res.json(rooms);
     });
+   app.get("/rooms/featured" , async(req , res) => {
+    const featuredRooms = await RoomsCollection.find({}).limit(6).toArray()
+    res.json(featuredRooms)
+    
+   })
 
     app.get("/rooms/:id", async (req, res) => {
       const { id } = req.params;
