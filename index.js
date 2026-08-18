@@ -9,6 +9,15 @@ const port = process.env.PORT_URI
 app.use(cors());
 app.use(express.json());
 
+const verifyToken = async(req , res , next) => {
+  const headers = req?.headers?.authorization
+  if(headers){
+    res.status(401).json({
+      message: "Unauthorized access"
+    })
+  }
+}
+
 const client = new MongoClient(process.env.MONGODB_URI);
 async function connectToMongoDB() {
   try {
