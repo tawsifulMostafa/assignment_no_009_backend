@@ -29,7 +29,7 @@ const verifyToken = async (req, res, next) => {
     req.user = payload;
     next();
   } catch (error) {
-  
+
 
     return res.status(403).json({
       message: "forbidden",
@@ -53,7 +53,7 @@ async function connectToMongoDB() {
       const addedRooms = req.body
       const result = await RoomsCollection.insertOne(addedRooms)
 
-      
+
       if (result.acknowledged === true) {
         {
           res.status(201).json({
@@ -85,7 +85,7 @@ async function connectToMongoDB() {
           message: "room not found"
         })
 
-      }else{
+      } else {
         res.json(result)
       }
     });
@@ -144,20 +144,22 @@ async function connectToMongoDB() {
       }
     });
     app.patch("/rooms/:id", verifyToken, async (req, res) => {
-      const newRoomData = req.body
-      const { id } = req.params
-      const result = await RoomsCollection.updateOne({ _id: new ObjectId(id) }, { $set: newRoomData })
-      res.json(result)
+      const newRoomData = req.body;
+      const { id } = req.params;
+
+      const result = await RoomsCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: newRoomData }
+      );
+
       if (result.acknowledged === true) {
-        {
-          res.status(201).json({
-            success: true,
-            message: "Room edited successfully",
-            insertedId: result.insertedId,
-          });
-        }
+        res.status(200).json({
+          success: true,
+          message: "Room edited successfully",
+          modifiedCount: result.modifiedCount,
+        });
       }
-    })
+    });
     app.patch("/bookings/:bookingId", verifyToken, async (req, res) => {
       const { bookingId } = req.params;
 
