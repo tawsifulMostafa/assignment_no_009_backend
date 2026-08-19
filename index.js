@@ -11,7 +11,7 @@ app.use(cors());
 app.use(express.json());
 
 const JWKS = createRemoteJWKSet(
-  new URL(process.env.FRONTEND_URL)
+  new URL(`${process.env.FRONTEND_URL}/api/auth/jwks`)
 );
 
 const verifyToken = async (req, res, next) => {
@@ -42,7 +42,7 @@ const verifyToken = async (req, res, next) => {
 const client = new MongoClient(process.env.MONGODB_URI);
 async function connectToMongoDB() {
   try {
-    await client.connect();
+    // await client.connect();
 
 
     const db = client.db("studyNook");
