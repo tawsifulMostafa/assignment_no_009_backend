@@ -1,6 +1,7 @@
 const express = require('express');
 const { MongoClient, ObjectId } = require('mongodb');
 const cors = require("cors");
+const { createRemoteJWKSet, jwtVerify } = require('jose-cjs');
 require("dotenv").config();
 
 const app = express();
@@ -9,14 +10,34 @@ const port = process.env.PORT_URI
 app.use(cors());
 app.use(express.json());
 
-const verifyToken = async(req , res , next) => {
-  const headers = req?.headers?.authorization
-  if(headers){
-    res.status(401).json({
-      message: "Unauthorized access"
-    })
+const JWKS = createRemoteJWKSet(
+  new URL("http://localhost:3000/api/auth/jwks")
+);
+
+const verifyToken = async (req, res, next) => {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(401).json({
+      message: "unauthorized",
+    });
   }
-}
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+
+    req.user = payload;
+    next();
+  } catch (error) {
+  
+
+    return res.status(403).json({
+      message: "forbidden",
+    });
+  }
+};
+
+
 
 const client = new MongoClient(process.env.MONGODB_URI);
 async function connectToMongoDB() {
@@ -28,11 +49,11 @@ async function connectToMongoDB() {
     const RoomsCollection = db.collection("rooms");
     const bookingCollection = db.collection("booked-rooms");
 
-    app.post('/add-room', async (req, res) => {
+    app.post('/add-room', verifyToken, async (req, res) => {
       const addedRooms = req.body
       const result = await RoomsCollection.insertOne(addedRooms)
-      res.json(result)
 
+      
       if (result.acknowledged === true) {
         {
           res.status(201).json({
@@ -49,11 +70,11 @@ async function connectToMongoDB() {
       const rooms = await RoomsCollection.find().toArray();
       res.json(rooms);
     });
-   app.get("/rooms/featured" , async(req , res) => {
-    const featuredRooms = await RoomsCollection.find({}).limit(6).toArray()
-    res.json(featuredRooms)
-    
-   })
+    app.get("/rooms/featured", async (req, res) => {
+      const featuredRooms = await RoomsCollection.find({}).limit(6).toArray()
+      res.json(featuredRooms)
+
+    })
 
     app.get("/rooms/:id", async (req, res) => {
       const { id } = req.params;
@@ -61,24 +82,25 @@ async function connectToMongoDB() {
 
       if (!result) {
         return res.status(404).json({
-          message: "room not found" 
+          message: "room not found"
         })
 
+      }else{
+        res.json(result)
       }
-      res.json(result);
     });
 
-    app.get("/booking/:userId", async (req, res) => {
+    app.get("/booking/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params
       const result = await bookingCollection.find({ userId: userId }).toArray()
       res.json(result)
     })
-    app.get("/rooms/user/:userId", async (req, res) => {
+    app.get("/rooms/user/:userId", verifyToken, async (req, res) => {
       const { userId } = req.params
       const result = await RoomsCollection.find({ userId: userId }).toArray()
       res.json(result)
     })
-    app.post("/bookings", async (req, res) => {
+    app.post("/bookings", verifyToken, async (req, res) => {
       try {
         const bookingData = req.body;
 
@@ -121,16 +143,22 @@ async function connectToMongoDB() {
         });
       }
     });
-    app.patch("/rooms/:id", async (req, res) => {
+    app.patch("/rooms/:id", verifyToken, async (req, res) => {
       const newRoomData = req.body
       const { id } = req.params
       const result = await RoomsCollection.updateOne({ _id: new ObjectId(id) }, { $set: newRoomData })
       res.json(result)
-      if (res.acknowledged === true) {
-        message: "Room edited successfully"
+      if (result.acknowledged === true) {
+        {
+          res.status(201).json({
+            success: true,
+            message: "Room edited successfully",
+            insertedId: result.insertedId,
+          });
+        }
       }
     })
-    app.patch("/bookings/:bookingId", async (req, res) => {
+    app.patch("/bookings/:bookingId", verifyToken, async (req, res) => {
       const { bookingId } = req.params;
 
       const result = await bookingCollection.updateOne(
@@ -141,10 +169,9 @@ async function connectToMongoDB() {
       res.send(result);
     });
 
-    app.delete("/rooms/:id", async (req, res) => {
+    app.delete("/rooms/:id", verifyToken, async (req, res) => {
       const { id } = req.params
       const result = await RoomsCollection.deleteOne({ _id: new ObjectId(id) })
-      res.json(result)
       if (result.acknowledged === true) {
         {
           res.status(201).json({
