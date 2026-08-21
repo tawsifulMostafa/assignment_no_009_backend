@@ -67,7 +67,20 @@ async function connectToMongoDB() {
     })
 
     app.get("/rooms", async (req, res) => {
-      const rooms = await RoomsCollection.find().toArray();
+      const { amenities, name } = req.query
+      const query = {};
+      if (amenities) {
+        query.amenities = {
+          $all: Array.isArray(amenities) ? amenities : [amenities],
+        };
+      }
+      if (name) {
+        query.name = {
+          $regex: name,
+          $options: "i",
+        };
+      }
+      const rooms = await RoomsCollection.find(query).toArray();
       res.json(rooms);
     });
     app.get("/rooms/featured", async (req, res) => {
