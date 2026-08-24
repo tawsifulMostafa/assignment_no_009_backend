@@ -139,9 +139,22 @@ async function connectToMongoDB() {
           });
         }
         bookingData.status = "confirmed";
+        bookingData.bookingCount = 0;
+
+
 
 
         const result = await bookingCollection.insertOne(bookingData);
+
+        await RoomsCollection.updateOne(
+          {
+            _id: new ObjectId(roomId)
+          }, {
+          $inc: {
+            bookingCount: 1 
+          }
+        }
+        );
 
         res.status(201).json({
           message: "Booking successful",
@@ -173,6 +186,8 @@ async function connectToMongoDB() {
         });
       }
     });
+
+
     app.patch("/bookings/:bookingId", verifyToken, async (req, res) => {
       const { bookingId } = req.params;
 
@@ -183,6 +198,8 @@ async function connectToMongoDB() {
 
       res.send(result);
     });
+
+
 
     app.delete("/rooms/:id", verifyToken, async (req, res) => {
       const { id } = req.params
