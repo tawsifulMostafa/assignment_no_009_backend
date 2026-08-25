@@ -54,6 +54,7 @@ async function connectToMongoDB() {
       const result = await RoomsCollection.insertOne(addedRooms)
 
 
+
       if (result.acknowledged === true) {
         {
           res.status(201).json({
@@ -103,16 +104,16 @@ async function connectToMongoDB() {
       }
     });
 
-    app.get("/booking/:userId", verifyToken, async (req, res) => {
-      const { userId } = req.params
-      const result = await bookingCollection.find({ userId: userId }).toArray()
-      res.json(result)
-    })
-    app.get("/rooms/user/:userId", verifyToken, async (req, res) => {
-      const { userId } = req.params
-      const result = await RoomsCollection.find({ userId: userId }).toArray()
-      res.json(result)
-    })
+      app.get("/booking/:userId", verifyToken, async (req, res) => {
+        const { userId } = req.params
+        const result = await bookingCollection.find({ userId: userId }).toArray()
+        res.json(result)
+      })
+      app.get("/rooms/user/:userId", verifyToken, async (req, res) => {
+        const { userId } = req.params
+        const result = await RoomsCollection.find({ userId: userId }).toArray()
+        res.json(result)
+      })
     app.post("/bookings", verifyToken, async (req, res) => {
       try {
         const bookingData = req.body;
@@ -151,7 +152,7 @@ async function connectToMongoDB() {
             _id: new ObjectId(roomId)
           }, {
           $inc: {
-            bookingCount: 1 
+            bookingCount: 1
           }
         }
         );
@@ -169,9 +170,28 @@ async function connectToMongoDB() {
         });
       }
     });
+
+
+    //  edit Room
     app.patch("/rooms/:id", verifyToken, async (req, res) => {
       const newRoomData = req.body;
       const { id } = req.params;
+
+      const room = await RoomsCollection.findOne({
+        _id: new ObjectId(id)
+      })
+
+      if (!room) {
+        return res.status(404).json({
+          message: "Room Not Found"
+        })
+      }
+      if (room.userId !== req.user.id) {
+        return res.status(403).json({
+          message: "UnAuthorized"
+        })
+
+      }
 
       const result = await RoomsCollection.updateOne(
         { _id: new ObjectId(id) },
@@ -188,8 +208,26 @@ async function connectToMongoDB() {
     });
 
 
+
     app.patch("/bookings/:bookingId", verifyToken, async (req, res) => {
       const { bookingId } = req.params;
+      const booking = await bookingCollection.findOne({
+        _id: new ObjectId(bookingId)
+
+      })
+      if (!booking) {
+        return res.status(404).json({
+          success: false,
+          message: "Booking not found",
+        });
+      }
+
+      if (booking.userId !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: "You cannot cancel this booking",
+        });
+      }
 
       const result = await bookingCollection.updateOne(
         { _id: new ObjectId(bookingId) },
@@ -200,9 +238,25 @@ async function connectToMongoDB() {
     });
 
 
+    //  Delete rooms
 
     app.delete("/rooms/:id", verifyToken, async (req, res) => {
       const { id } = req.params
+
+      const room = await RoomsCollection.findOne({
+        _id: new ObjectId(id)
+      })
+      if (!room) {
+        res.status(404).json({
+          message: "Room Not Found"
+        })
+      }
+      if (room.userId !== req.user.id) {
+        res.status(403).json({
+          message: "Only Room Owner can delete Room"
+        })
+      }
+
       const result = await RoomsCollection.deleteOne({ _id: new ObjectId(id) })
       if (result.acknowledged === true) {
         {
