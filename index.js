@@ -49,9 +49,12 @@ async function connectToMongoDB() {
     const RoomsCollection = db.collection("rooms");
     const bookingCollection = db.collection("booked-rooms");
 
+    //add rooms
+
     app.post('/add-room', verifyToken, async (req, res) => {
       const addedRooms = {
         ...req.body,
+        userId : req.user.id,
         createdAt: new Date()
       }
       const result = await RoomsCollection.insertOne(addedRooms)
@@ -67,6 +70,7 @@ async function connectToMongoDB() {
       }
 
     })
+//room collection finding 
 
     app.get("/rooms", async (req, res) => {
       const { amenities, name } = req.query
@@ -85,6 +89,8 @@ async function connectToMongoDB() {
       const rooms = await RoomsCollection.find(query).toArray();
       res.json(rooms);
     });
+
+    //featured card in home.............
     app.get("/rooms/featured", async (req, res) => {
       const featuredRooms = await RoomsCollection.find({}).sort({createdAt : -1}).limit(6).toArray()
       res.json(featuredRooms)
@@ -136,6 +142,10 @@ async function connectToMongoDB() {
 
       res.json(result);
     });
+
+
+//Booking Card posting
+
     app.post("/bookings", verifyToken, async (req, res) => {
       try {
         const bookingData = req.body;
@@ -164,10 +174,7 @@ async function connectToMongoDB() {
         bookingData.status = "confirmed";
         bookingData.bookingCount = 0;
 
-
-
-
-        const result = await bookingCollection.insertOne(bookingData);
+  const result = await bookingCollection.insertOne(bookingData);
 
         await RoomsCollection.updateOne(
           {
@@ -192,8 +199,6 @@ async function connectToMongoDB() {
         });
       }
     });
-
-
     //  edit Room
     app.patch("/rooms/:id", verifyToken, async (req, res) => {
       const newRoomData = req.body;
@@ -230,7 +235,7 @@ async function connectToMongoDB() {
     });
 
 
-
+ //Cancel Booking
     app.patch("/bookings/:bookingId", verifyToken, async (req, res) => {
       const { bookingId } = req.params;
       const booking = await bookingCollection.findOne({
@@ -268,12 +273,12 @@ async function connectToMongoDB() {
         _id: new ObjectId(id)
       })
       if (!room) {
-        res.status(404).json({
+       return res.status(404).json({
           message: "Room Not Found"
         })
       }
       if (room.userId !== req.user.id) {
-        res.status(403).json({
+      return res.status(403).json({
           message: "Only Room Owner can delete Room"
         })
       }
