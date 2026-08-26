@@ -50,10 +50,11 @@ async function connectToMongoDB() {
     const bookingCollection = db.collection("booked-rooms");
 
     app.post('/add-room', verifyToken, async (req, res) => {
-      const addedRooms = req.body
+      const addedRooms = {
+        ...req.body,
+        createdAt: new Date()
+      }
       const result = await RoomsCollection.insertOne(addedRooms)
-
-
 
       if (result.acknowledged === true) {
         {
@@ -85,9 +86,8 @@ async function connectToMongoDB() {
       res.json(rooms);
     });
     app.get("/rooms/featured", async (req, res) => {
-      const featuredRooms = await RoomsCollection.find({}).limit(6).toArray()
+      const featuredRooms = await RoomsCollection.find({}).sort({createdAt : -1}).limit(6).toArray()
       res.json(featuredRooms)
-
     })
 
     app.get("/rooms/:id", async (req, res) => {
@@ -104,16 +104,38 @@ async function connectToMongoDB() {
       }
     });
 
-      app.get("/booking/:userId", verifyToken, async (req, res) => {
-        const { userId } = req.params
-        const result = await bookingCollection.find({ userId: userId }).toArray()
-        res.json(result)
-      })
-      app.get("/rooms/user/:userId", verifyToken, async (req, res) => {
-        const { userId } = req.params
-        const result = await RoomsCollection.find({ userId: userId }).toArray()
-        res.json(result)
-      })
+    app.get("/booking/:userId", verifyToken, async (req, res) => {
+      const { userId } = req.params;
+
+      if (userId !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not allowed to access these bookings",
+        });
+      }
+
+      const result = await bookingCollection
+        .find({ userId: userId })
+        .toArray();
+
+      res.json(result);
+    });
+    app.get("/rooms/user/:userId", verifyToken, async (req, res) => {
+      const { userId } = req.params;
+
+      if (userId !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: "You are not allowed to access these rooms",
+        });
+      }
+
+      const result = await RoomsCollection
+        .find({ userId: userId })
+        .toArray();
+
+      res.json(result);
+    });
     app.post("/bookings", verifyToken, async (req, res) => {
       try {
         const bookingData = req.body;
@@ -231,8 +253,7 @@ async function connectToMongoDB() {
 
       const result = await bookingCollection.updateOne(
         { _id: new ObjectId(bookingId) },
-        { $set: { status: "cancelled" } }
-      );
+        { $set: { status: "cancelled" } },);
 
       res.send(result);
     });
